@@ -8,7 +8,7 @@ namespace P2_Apli1_Lohammy.Services;
 public class RegistroServices (IDbContextFactory<Contexto> DbFactory)
 {
 
-    public async Task<bool> Guardar(Registro registro)
+    public async Task<bool> Guardar(RegistroPedidos registro)
     {
         if (!await Existe(registro.IdEntrada))
         {
@@ -25,14 +25,14 @@ public class RegistroServices (IDbContextFactory<Contexto> DbFactory)
         return await contexto.Registro.AnyAsync(p => p.IdEntrada == id);
     }
 
-    private async Task<bool> Insertar(Registro registro)
+    private async Task<bool> Insertar(RegistroPedidos registro)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
         contexto.Registro.Add(registro);
         return await contexto.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> Modificar(Registro registro)
+    public async Task<bool> Modificar(RegistroPedidos registro)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
 
@@ -55,7 +55,7 @@ public class RegistroServices (IDbContextFactory<Contexto> DbFactory)
         return await contexto.SaveChangesAsync() > 0;
     }
 
-    public async Task<List<Registro>> Listar(Expression<Func<Registro, bool>> criterio)
+    public async Task<List<RegistroPedidos>> Listar(Expression<Func<RegistroPedidos, bool>> criterio)
     {
 
         await using var contexto = await DbFactory.CreateDbContextAsync();
