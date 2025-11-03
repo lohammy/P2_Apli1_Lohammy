@@ -1,6 +1,7 @@
-﻿namespace P2_Apli1_Lohammy.Models
+﻿namespace P2_Apli1_Lohammy.Models;
+
+public class Registro
 {
-    public class Registro
-    {
-    }
+    [Key] 
+    public int RegistroID { get; set; }
 }
