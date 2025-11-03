@@ -6,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+var ConStr = builder.Configuration.GetConnectionString("sqlConnection");
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
