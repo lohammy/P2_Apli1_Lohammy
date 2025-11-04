@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using P2_Apli1_Lohammy.Components;
+using P2_Apli1_Lohammy.DAL;
+//using P2_Apli1_Lohammy.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +10,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var ConStr = builder.Configuration.GetConnectionString("sqlConnection");
+builder.Services.AddDbContextFactory<Contexto>(o => o.UseSqlite(ConStr));
 
+//builder.Services.AddScoped<RegistroPedidosServices>();
 
 var app = builder.Build();
 
