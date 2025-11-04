@@ -3,9 +3,12 @@ using P2_Apli1_Lohammy.Models;
 
 namespace P2_Apli1_Lohammy.DAL;
 
-public class Contexto : DbContext
+public class Contexto(DbContextOptions<Contexto> options) : DbContext(options)
 {
-    public Contexto(DbContextOptions<Contexto> options) : base(options) { }
+
+    public DbSet<RegistroPedidos> RegistroPedidos { get; set; }
+    public DbSet<RegistroPedidosDetalle> RegistroPedidosDetalle { get; set; }
+
     public DbSet<Componente> Componentes { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
