@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace P2_Apli1_Lohammy.Models
 {
     public class Componente
     {
-        [PrimaryKey]
+        [Key]
         public int ComponenteId { get; set; }
 
         [Required(ErrorMessage = "Este campo es obligatorio")]
@@ -18,5 +19,8 @@ namespace P2_Apli1_Lohammy.Models
         [Required(ErrorMessage = "Este campo es obligatorio")]
         [Range(1, double.MaxValue, ErrorMessage = "Debe introducir una cantidad valida")]
         public int Existencia { get; set; }
+
+        [InverseProperty("Componentes")]
+        public virtual ICollection<RegistroPedidosDetalle> PedidosDetalles { get; set; } = new List<RegistroPedidosDetalle>();
     }
 }
