@@ -1,9 +1,331 @@
-﻿
-<PageTitle>Crear </PageTitle>
+﻿@page "/RegistroPedidos/Create"
+@page "/RegistroPedidos/Edit/{Id:int}"
+@using Microsoft.EntityFrameworkCore
+@using P2_Apli1_Lohammy.DAL
+@using P2_Apli1_Lohammy.Models
+@using P2_Apli1_Lohammy.Services
+@inject IDbContextFactory<Contexto> DbFactory
+@inject RegistroPedidosServices registroPedidosServices
+@inject NavigationManager navigationManager
+@rendermode InteractiveServer
+
+<PageTitle>@(Id > 0 ? "Editar Pedido" : "Crear Pedido")</PageTitle>
+
+<EditForm Model="registroPedidos" OnValidSubmit="Guardar">
+	<DataAnnotationsValidator />
+	<div class="container">
+		<div class="card shadow-lg">
+			<div class="card-header text-center">
+				<h5 class="card-title">@(Id > 0 ? "Editar Entrada de Pedidos" : "Crear Entrada de Pedidos")</h5>
+			</div>
+
+			<div class="card-body">
+				<div class="mb-3">
+					<label class="form-label">Fecha</label>
+					<InputDate class="form-control" @bind-Value="registroPedidos.Fecha"></InputDate>
+					<ValidationMessage For="(() => registroPedidos.Fecha)" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">PedidoId</label>
+					<InputNumber class="form-control bg-light text-secondary" @bind-Value="registroPedidos.PedidoId" readonly></InputNumber>
+					<ValidationMessage For="(() => registroPedidos.PedidoId)" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">NombreCliente</label>
+					<InputText class="form-control" @bind-Value="registroPedidos.NombreCliente"></InputText>
+					<ValidationMessage For="(() => registroPedidos.NombreCliente)" />
+				</div>
+
+				@*Detalles de Pedidos*@
+				<div class="border border-success p-3 mt-3">
+					<h5>Detalles de Pedidos</h5>
+
+					@if (!string.IsNullOrEmpty(errorMessage))
+					{
+						<div class="alert alert-danger" role="alert">
+							@errorMessage
+							<button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+						</div>
+					}
+
+					@* Selector de componentes *@
+					<div class="row">
+						<div class="col-4">
+							<label class="form-label">Componentes</label>
+							<InputSelect @bind-Value="componenteIdDetalle" class="form-select" @onchange="OnComponenteSeleccionado">
+								<option value="0">Seleccione un componente</option>
+								@foreach (var componente in ListaComponente)
+								{
+									<option value="@componente.ComponenteId">@componente.Descripcion (Existencia: @componente.Existencia)</option>
+								}
+							</InputSelect>
+						</div>
+
+						<div class="col-3">
+							<label class="form-label">Cantidad</label>
+							<InputNumber class="form-control" @bind-Value="cantidad"></InputNumber>
+						</div>
+
+						<div class="col-3">
+							<label class="form-label">Precio</label>
+							<InputNumber class="form-control" @bind-Value="precioDetalle" step="0.01"></InputNumber>
+						</div>
+
+						<div class="col-2 align-self-end">
+							<button type="button" class="btn btn-success bi bi-plus" @onclick="AgregarComponente">Agregar</button>
+						</div>
+					</div>
+
+					@* Tabla de detalles *@
+					@if (registroPedidos.PedidosDetalles.Any())
+					{
+						<div class="mt-3">
+							<table class="table table-bordered table-striped table-hover">
+								<thead>
+									<tr class="text-center">
+										<th>Descripción</th>
+										<th>Cantidad</th>
+										<th>Precio</th>
+										<th>Total</th>
+										<th>Remover</th>
+									</tr>
+								</thead>
+								<tbody class="text-center">
+									@foreach (var detalle in registroPedidos.PedidosDetalles)
+									{
+										<tr>
+											<td>@(ListaComponente.FirstOrDefault(t => t.ComponenteId == detalle.ComponenteId)?.Descripcion ?? "N/A")</td>
+											<td>@detalle.Cantidad</td>
+											<td>@detalle.Precio.ToString("C")</td>
+											<td>@((detalle.Cantidad * detalle.Precio).ToString("C"))</td>
+											<td>
+												<button type="button" class="btn btn-outline-danger bi bi-trash"
+														@onclick="() => RemoverDetalle(detalle)">
+													Remover
+												</button>
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+
+							<label class="float-end"><strong>Cantidad de Detalles: </strong>@registroPedidos.PedidosDetalles.Count</label>
+
+							<div class="mt-3">
+								<label class="form-label"><strong>Total:</strong></label>
+								<input class="form-control bg-light text-secondary"
+									   value="@registroPedidos.PedidosDetalles.Sum(d => d.Cantidad * d.Precio).ToString("C")"
+									   readonly />
+							</div>
+						</div>
+					}
+				</div>
+
+				@if (!string.IsNullOrWhiteSpace(Mensaje))
+				{
+					<div class="alert alert-danger">@Mensaje</div>
+				}
+			</div>
+
+			<div class="card-footer text-center">
+				<a href="/RegistroPedidos/Index" class="btn btn-secondary">
+					<span class="bi bi-arrow-left"></span> Volver
+				</a>
+
+				<button type="submit" class="btn btn-primary bi bi-save">
+					@(Id > 0 ? "Modificar" : "Guardar")
+				</button>
+
+				@if (Id > 0)
+				{
+					<button type="button" class="btn btn-danger bi bi-trash" @onclick="Eliminar">
+						Eliminar
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+</EditForm>
 
 @code {
-	
+	[Parameter] public int Id { get; set; }
+
+	public RegistroPedidos registroPedidos { get; set; } = new RegistroPedidos();
+	public RegistroPedidosDetalle DetalleSeleccionado { get; set; } = new();
+	public List<Componente> ListaComponente { get; set; } = new();
+	public string Mensaje { get; set; } = string.Empty;
+	public string errorMessage { get; set; } = string.Empty;
+	public int cantidad { get; set; }
+	public int componenteIdDetalle { get; set; }
+	public decimal precioDetalle { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		ListaComponente = await registroPedidosServices.ListarComponente();
+
+		if (Id > 0)
+		{
+			var pedidoExistente = await registroPedidosServices.Buscar(Id);
+			if (pedidoExistente != null)
+			{
+				registroPedidos = pedidoExistente;
+			}
+			else
+			{
+				Mensaje = "Pedido no encontrado";
+				registroPedidos = new RegistroPedidos();
+			}
+		}
+		else
+		{
+			registroPedidos = new RegistroPedidos
+				{
+					Fecha = DateTime.Now,
+					PedidosDetalles = new List<RegistroPedidosDetalle>()
+				};
+		}
+	}
+
+	public async Task AgregarComponente()
+	{
+		errorMessage = string.Empty;
+
+		if (cantidad <= 0)
+		{
+			errorMessage = "La cantidad debe ser mayor que 0";
+			return;
+		}
+
+		if (componenteIdDetalle <= 0)
+		{
+			errorMessage = "Debe seleccionar un componente";
+			return;
+		}
+
+		if (precioDetalle <= 0)
+		{
+			errorMessage = "El precio debe ser mayor que 0";
+			return;
+		}
+
+		var componente = ListaComponente.FirstOrDefault(c => c.ComponenteId == componenteIdDetalle);
+		if (componente == null)
+		{
+			errorMessage = "Componente no encontrado";
+			return;
+		}
+
+		var cantidadAgregada = registroPedidos.PedidosDetalles
+			.Where(d => d.ComponenteId == componenteIdDetalle)
+			.Sum(d => d.Cantidad);
+
+		if (cantidadAgregada + cantidad > componente.Existencia)
+		{
+			errorMessage = $"Inventario insuficiente. Quedan {componente.Existencia} y ya pedidas {cantidadAgregada}";
+			return;
+		}
+
+		var detalleExistente = registroPedidos.PedidosDetalles
+			.FirstOrDefault(d => d.ComponenteId == componenteIdDetalle);
+
+		if (detalleExistente != null)
+		{
+			detalleExistente.Cantidad += cantidad;
+			if (detalleExistente.Precio != precioDetalle)
+			{
+				detalleExistente.Precio = precioDetalle;
+			}
+		}
+		else
+		{
+			var nuevoDetalle = new RegistroPedidosDetalle
+				{
+					ComponenteId = componenteIdDetalle,
+					Cantidad = cantidad,
+					Precio = precioDetalle
+				};
+			registroPedidos.PedidosDetalles.Add(nuevoDetalle);
+		}
+
+		LimpiarCampos();
+	}
+
+	private void RemoverDetalle(RegistroPedidosDetalle detalle)
+	{
+		registroPedidos.PedidosDetalles.Remove(detalle);
+		DetalleSeleccionado = detalle;
+	}
+
+	public async Task Guardar()
+	{
+		errorMessage = string.Empty;
+		Mensaje = string.Empty;
+
+		if (string.IsNullOrWhiteSpace(registroPedidos.NombreCliente))
+		{
+			Mensaje = "El nombre del cliente no puede estar vacío";
+			return;
+		}
+
+		if (!registroPedidos.PedidosDetalles.Any())
+		{
+			Mensaje = "Debe agregar al menos un detalle al pedido";
+			return;
+		}
+
+		var resultado = await registroPedidosServices.Guardar(registroPedidos);
+
+		if (resultado)
+		{
+			navigationManager.NavigateTo("/RegistroPedidos/Index");
+		}
+		else
+		{
+			Mensaje = Id > 0 ? "No se pudo modificar el pedido correctamente" : "No se pudo guardar el pedido correctamente";
+		}
+	}
+
+	public async Task Eliminar()
+	{
+		if (Id > 0)
+		{
+			var eliminado = await registroPedidosServices.Eliminar(Id);
+
+			if (eliminado)
+			{
+				navigationManager.NavigateTo("/RegistroPedidos/Index");
+			}
+			else
+			{
+				errorMessage = "No se pudo eliminar el pedido correctamente";
+			}
+		}
+	}
+
+	private void LimpiarCampos()
+	{
+		componenteIdDetalle = 0;
+		cantidad = 0;
+		precioDetalle = 0;
+	}
+
+	private void OnComponenteSeleccionado(ChangeEventArgs e)
+	{
+		if (int.TryParse(e.Value?.ToString(), out int componenteId) && componenteId > 0)
+		{
+			componenteIdDetalle = componenteId;
+			var componente = ListaComponente.FirstOrDefault(c => c.ComponenteId == componenteId);
+			if (componente != null)
+			{
+				precioDetalle = componente.Precio;
+			}
+		}
+		else
+		{
+			componenteIdDetalle = 0;
+			precioDetalle = 0;
+		}
+	}
 }
-
-
-
