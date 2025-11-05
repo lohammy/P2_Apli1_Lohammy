@@ -1,5 +1,114 @@
-﻿<h3>RegistroIndex</h3>
+﻿@page "/RegistroPedidos/Index"
+@using System.Globalization;
+@using P2_Apli1_Lohammy.Models
+@using P2_Apli1_Lohammy.Services
+@inject NavigationManager navigationManager
+@inject RegistroPedidosServices registroPedidosServices
+@rendermode InteractiveServer
+
+<PageTitle>Index de Registro de pedidos</PageTitle>
+
+<div class="container">
+	<div class="card shadow-lg">
+		<div class="card-header  d-flex justify-content-between align-items-center">
+			<div class="card-title"></div>
+			<h5 class="card-title">index</h5>
+			<a href="/RegistroPedidos/Create" class="btn btn-primary"><span class="bi bi-plus-square"></span>Crear</a>
+		</div>
+		<div class="card-body">
+			<div class="row">
+				<div class="col-3">
+					<label class="col-form-label"><strong>Filtrar por</strong></label>
+				</div>
+				<div class="col-4 offset-5">
+					<label class="col-form-label"><strong>B&uacute;squeda</strong></label>
+				</div>
+				<div class="row align-items-center">
+					<div class="col-3">
+						<InputSelect class="form-select" @bind-Value="Filtro">
+							<option value="" selected disabled>Selecciona una opci&oacute;n</option>
+							<option value="PedidoId">Pedido ID </option>
+							<option value="NombreCliente">Nombre del cliente</option>
+						</InputSelect>
+					</div>
+					<div class="col-4 offset-5">
+						<div class="input-group">
+							<input class="form-control" @bind="ValorFiltro" placeholder="Buscar" />
+							<button type="button" class="btn btn-outline-primary bi bi-search" @onclick=Buscar></button>
+						</div>
+					</div>
+				</div>
+				<table class="table table-hover">
+					<thead class="table table-striped text-black">
+						<tr>
+							<th>Pedido Id</th>
+							<th>Fecha</th>
+							<th>NombreCliente</th>
+							<th>Cantidad</th>
+							<th>Precio</th>
+							<th>Opciones</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var registroPedidos in ListaRegistroPedidos)
+						{
+							<tr>
+								<td>@registroPedidos.PedidoId</td>
+								<td>@registroPedidos.Fecha</td>
+								<td>@registroPedidos.NombreCliente</td>
+								<td>@registroPedidos.PedidosDetalles.Sum(e => e.Cantidad)</td>
+								<td>@registroPedidos.PedidosDetalles.Sum(e => e.Cantidad * e.Precio)</td>
+								<td class="text-center">
+									<a href="/RegistroPedidos/Edit/@registroPedidos.PedidoId" class="btn btn-outline-primary bi bi-pencil-square"></a>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			<div class="card-footer space-between">
+				<label>Total de pedidos: @ListaRegistroPedidos.Count()</label>
+				<div class="col-5">
+					<label>Total: @ListaRegistroPedidos.Sum(s => s.PedidosDetalles.Sum(d => d.Cantidad * d.Precio))</label>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 
 @code {
+	public List<RegistroPedidos> ListaRegistroPedidos { get; set; } = new List<RegistroPedidos>();
+	public string Filtro { get; set; } = string.Empty;
+	public string ValorFiltro { get; set; } = string.Empty;
 
+	protected override async Task OnInitializedAsync()
+	{
+		ListaRegistroPedidos = await registroPedidosServices.Listar(p => p.PedidoId > 0);
+	}
+
+	private async Task Buscar()
+	{
+		if (ValorFiltro.Trim() != "")
+		{
+			if (Filtro == "PedidoId" && int.TryParse(ValorFiltro, out int id))
+			{
+				ListaRegistroPedidos = await registroPedidosServices.Listar(a => a.PedidoId == id);
+			}
+			else if (Filtro == "NombreCliente")
+			{
+				ListaRegistroPedidos = await registroPedidosServices.Listar(p => p.NombreCliente.ToLower().Contains(ValorFiltro.ToLower()));
+			}
+		}
+		else
+		{
+			ListaRegistroPedidos = await registroPedidosServices.Listar(a => a.PedidoId > 0);
+		}
+	}
+
+	private async Task Restablecer()
+	{
+		ListaRegistroPedidos = await registroPedidosServices.Listar(e => e.PedidoId > 0);
+		Filtro = string.Empty;
+		ValorFiltro = string.Empty;
+	}
 }
