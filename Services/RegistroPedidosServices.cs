@@ -59,7 +59,6 @@ public class RegistroPedidosServices(IDbContextFactory<Contexto> DbFactory)
         await using var contexto = await DbFactory.CreateDbContextAsync();
         return await contexto.RegistroPedidos
             .Include(e => e.PedidosDetalles)
-                .ThenInclude(d => d.ComponenteId)
             .FirstOrDefaultAsync(e => e.PedidoId == pedidoId);
     }
     public async Task<bool> Eliminar(int pedidoId)
@@ -98,16 +97,16 @@ public class RegistroPedidosServices(IDbContextFactory<Contexto> DbFactory)
         await using var contexto = await DbFactory.CreateDbContextAsync();
         foreach (var item in detalle)
         {
-            var tipoHuacal = await contexto.Componentes
+            var componente = await contexto.Componentes
                 .SingleAsync(t => t.ComponenteId == item.ComponenteId);
 
             if (tipoOperacion == TipoOperacion.Suma)
             {
-                tipoHuacal.Existencia += item.Cantidad;
+                componente.Existencia += item.Cantidad;
             }
             else if (tipoOperacion == TipoOperacion.Resta)
             {
-                tipoHuacal.Existencia -= item.Cantidad;
+                componente.Existencia -= item.Cantidad;
             }
 
             await contexto.SaveChangesAsync();
