@@ -14,7 +14,7 @@ namespace P2_Apli1_Lohammy.Models
 
         [Required(ErrorMessage = "Esto es obligatorio")]
         [RegularExpression("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$", ErrorMessage = "En este campo solo se permiten letras.")]
-        public string NombreCliente { get; set; }
+        public string? NombreCliente { get; set; }
 
         public decimal Total { get; set; }
 
